@@ -80,14 +80,19 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
     private val fullScreenMediaSessionFeature = ViewBoundFeatureWrapper<MediaSessionFullscreenFeature>()
     private val lastTabFeature = ViewBoundFeatureWrapper<LastTabFeature>()
 
-    private val engineView: EngineView
-        get() = requireView().findViewById<View>(R.id.engineView) as EngineView
-    private val toolbar: BrowserToolbar
-        get() = requireView().findViewById(R.id.toolbar)
-    private val findInPageBar: FindInPageBar
-        get() = requireView().findViewById(R.id.findInPageBar)
-    private val swipeRefresh: SwipeRefreshLayout
-        get() = requireView().findViewById(R.id.swipeRefresh)
+    // Used lazy initialization to prevent potential leaks
+    private val engineView: EngineView by lazy {
+        requireView().findViewById<View>(R.id.engineView) as EngineView
+    }
+    private val toolbar: BrowserToolbar by lazy {
+        requireView().findViewById(R.id.toolbar)
+    }
+    private val findInPageBar: FindInPageBar by lazy {
+        requireView().findViewById(R.id.findInPageBar)
+    }
+    private val swipeRefresh: SwipeRefreshLayout by lazy {
+        requireView().findViewById(R.id.swipeRefresh)
+    }
 
     private val backButtonHandler: List<ViewBoundFeatureWrapper<*>> = listOf(
         fullScreenFeature,
@@ -401,6 +406,26 @@ abstract class BaseBrowserFragment : Fragment(), UserInteractionHandler, Activit
             params.topMargin = resources.getDimensionPixelSize(R.dimen.browser_toolbar_height)
             swipeRefresh.layoutParams = params
         }
+    }
+    override fun onDestroyView() {
+        super.onDestroyView()
+        sessionFeature.clear()
+        toolbarIntegration.clear()
+        contextMenuIntegration.clear()
+        downloadsFeature.clear()
+        shareDownloadsFeature.clear()
+        appLinksFeature.clear()
+        promptsFeature.clear()
+        webExtensionPromptFeature.clear()
+        fullScreenFeature.clear()
+        findInPageIntegration.clear()
+        sitePermissionFeature.clear()
+        pictureInPictureIntegration.clear()
+        swipeRefreshFeature.clear()
+        windowFeature.clear()
+        webAuthnFeature.clear()
+        fullScreenMediaSessionFeature.clear()
+        lastTabFeature.clear()
     }
 
     private fun fullScreenChanged(enabled: Boolean) {

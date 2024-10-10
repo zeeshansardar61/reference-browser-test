@@ -35,16 +35,23 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler {
     private val webExtToolbarFeature = ViewBoundFeatureWrapper<WebExtensionToolbarFeature>()
     private val windowFeature = ViewBoundFeatureWrapper<WindowFeature>()
 
-    private val awesomeBar: AwesomeBarWrapper
-        get() = requireView().findViewById(R.id.awesomeBar)
-    private val toolbar: BrowserToolbar
-        get() = requireView().findViewById(R.id.toolbar)
-    private val engineView: EngineView
-        get() = requireView().findViewById<View>(R.id.engineView) as EngineView
-    private val readerViewBar: ReaderViewControlsBar
-        get() = requireView().findViewById(R.id.readerViewBar)
-    private val readerViewAppearanceButton: FloatingActionButton
-        get() = requireView().findViewById(R.id.readerViewAppearanceButton)
+    // Used lazy initialization to prevent potential leaks
+    private val awesomeBar: AwesomeBarWrapper by lazy {
+        requireView().findViewById(R.id.awesomeBar)
+    }
+    private val toolbar: BrowserToolbar by lazy {
+        requireView().findViewById(R.id.toolbar)
+    }
+    private val engineView: EngineView by lazy {
+        requireView().findViewById<View>(R.id.engineView) as EngineView
+    }
+    private val readerViewBar: ReaderViewControlsBar by lazy {
+        requireView().findViewById(R.id.readerViewBar)
+    }
+    private val readerViewAppearanceButton: FloatingActionButton by lazy {
+        requireView().findViewById(R.id.readerViewAppearanceButton)
+    }
+
 
     override val shouldUseComposeUI: Boolean
         get() = PreferenceManager.getDefaultSharedPreferences(requireContext()).getBoolean(
@@ -138,6 +145,14 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler {
         )
 
         engineView.setDynamicToolbarMaxHeight(resources.getDimensionPixelSize(R.dimen.browser_toolbar_height))
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        thumbnailsFeature.clear()
+        readerViewFeature.clear()
+        webExtToolbarFeature.clear()
+        windowFeature.clear()
     }
 
     private fun showTabs() {

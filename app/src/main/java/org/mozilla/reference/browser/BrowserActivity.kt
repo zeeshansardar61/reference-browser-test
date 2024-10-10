@@ -28,18 +28,21 @@ import org.mozilla.reference.browser.browser.CrashIntegration
 import org.mozilla.reference.browser.ext.components
 import org.mozilla.reference.browser.ext.isCrashReportActive
 
+
 /**
  * Activity that holds the [BrowserFragment].
  */
 open class BrowserActivity : AppCompatActivity() {
 
-    private lateinit var crashIntegration: CrashIntegration
+    private var crashIntegration: CrashIntegration? = null
 
     private val sessionId: String?
         get() = SafeIntent(intent).getStringExtra(EXTRA_SESSION_ID)
 
     private val webExtensionPopupObserver by lazy {
-        WebExtensionPopupObserver(components.core.store, ::openPopup)
+        WebExtensionPopupObserver(components.core.store) { webExtensionState ->
+            openPopup(webExtensionState)
+        }
     }
 
     /**
@@ -52,7 +55,7 @@ open class BrowserActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        components.notificationsDelegate.bindToActivity(this)
+        components.notificationsDelegate.bindToActivity(this@BrowserActivity)
 
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction().apply {
@@ -65,7 +68,7 @@ open class BrowserActivity : AppCompatActivity() {
             crashIntegration = CrashIntegration(this, components.analytics.crashReporter) { crash ->
                 onNonFatalCrash(crash)
             }
-            lifecycle.addObserver(crashIntegration)
+            lifecycle.addObserver(crashIntegration!!)
         }
 
         NotificationManager.checkAndNotifyPolicy(this)
@@ -87,7 +90,7 @@ open class BrowserActivity : AppCompatActivity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         Logger.info(
             "Activity onActivityResult received with " +
-                "requestCode: $requestCode, resultCode: $resultCode, data: $data",
+                    "requestCode: $requestCode, resultCode: $resultCode, data: $data",
         )
 
         supportFragmentManager.fragments.forEach {
@@ -114,21 +117,35 @@ open class BrowserActivity : AppCompatActivity() {
         super.onUserLeaveHint()
     }
 
-    override fun onCreateView(parent: View?, name: String, context: Context, attrs: AttributeSet): View? =
+    override fun onCreateView(
+        parent: View?,
+        name: String,
+        context: Context,
+        attrs: AttributeSet
+    ): View? =
         when (name) {
-            EngineView::class.java.name -> components.core.engine.createView(context, attrs).asView()
+            EngineView::class.java.name -> components.core.engine.createView(context, attrs)
+                .asView()
+
             else -> super.onCreateView(parent, name, context, attrs)
         }
 
     private fun onNonFatalCrash(crash: Crash) {
-        Snackbar.make(findViewById(android.R.id.content), R.string.crash_report_non_fatal_message, LENGTH_LONG)
-            .setAction(R.string.crash_report_non_fatal_action) {
-                crashIntegration.sendCrashReport(crash)
-            }.show()
+        crashIntegration?.let {
+            Snackbar.make(
+                findViewById(android.R.id.content),
+                R.string.crash_report_non_fatal_message,
+                LENGTH_LONG
+            )
+                .setAction(R.string.crash_report_non_fatal_action) { view ->
+                    it.sendCrashReport(crash)
+                }.show()
+        }
+
     }
 
     private fun openPopup(webExtensionState: WebExtensionState) {
-        val intent = Intent(this, WebExtensionActionPopupActivity::class.java)
+        val intent = Intent(applicationContext, WebExtensionActionPopupActivity::class.java)
         intent.putExtra("web_extension_id", webExtensionState.id)
         intent.putExtra("web_extension_name", webExtensionState.name)
         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK

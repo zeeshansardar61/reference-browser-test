@@ -360,6 +360,8 @@ dependencies {
     androidTestImplementation libs.okhttp
     androidTestImplementation libs.okio
 
+    debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.14'
+
     androidTestUtil libs.androidx.test.orchestrator
 }
 
